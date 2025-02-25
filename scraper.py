@@ -32,6 +32,17 @@ def close_cookies(driver):
     except:
         print("Cookies already closed or not needed.")
 
+def create_soup(url):
+    chrome_options = init_chrome()
+    driver = init_driver(chrome_options)
+    driver.get(url)
+    time.sleep(4)  # Allow time for dynamic content to load
+
+    html = driver.page_source
+    driver.quit()
+    
+    soup = BeautifulSoup(html, "html.parser")
+    return soup
 def last_results_league(country, league):
     chrome_options = init_chrome()
     driver = init_driver(chrome_options)
@@ -139,18 +150,63 @@ def get_team_page_url(country, league, team):
     return team_url
 
 def team_info(country, league, team):
+    team_info = defaultdict(list)
+    url = get_team_page_url(country, league, team) + "resultados/"
+    print(url)
+    team_info["prev_matches"] = team_prev_matches(url)
+    url = get_team_page_url(country, league, team) + "lista/"
+    team_info["next_matches"] = team_next_matches(url)
+    url = get_team_page_url(country, league, team) + "classificacoes/"
+    team_info["standings"] = team_standings_championship(url)
+    return team_info
 
 # Returns the next 5 games of the team
 def team_next_matches(url):
+    soup = create_soup(url)
+    results = []
+    matches = soup.find_all("div", class_="event__match")
+    
+    
+    for i in range(5):
+        match_date = matches[i].find("div", class_="event__time").get_text()    
+        home_team = matches[i].find("div", class_="event__homeParticipant").select_one("[data-testid='wcl-scores-simpleText-01']").get_text(strip=True)
+        away_team = matches[i].find("div", class_="event__awayParticipant").select_one("[data-testid='wcl-scores-simpleText-01']").get_text(strip=True)     
+        results.append((match_date, home_team, away_team))
+    return results     
 
 # returns the prev 5 games
 def team_prev_matches(url):
+    soup = create_soup(url)
+    results = []
+    matches = soup.find_all("div", class_="event__match")
+    print(matches)
+    
+    for i in range(5):
+        match_date = matches[i].find("div", class_="event__time").get_text()    
+        home_team = matches[i].find("div", class_="event__homeParticipant").select_one("[data-testid='wcl-scores-simpleText-01']").get_text(strip=True)
+        away_team = matches[i].find("div", class_="event__awayParticipant").select_one("[data-testid='wcl-scores-simpleText-01']").get_text(strip=True)     
+        home_score = matches[i].find("div", class_="event__score--home").get_text(strip=True)
+        away_score = matches[i].find("div", class_="event__score--away").get_text(strip=True)
+        results.append((match_date, home_team, away_team, home_score, away_score))
+    return results       
 
 # returns the team standing in championship
 def team_standings_championship(url):
+    soup = create_soup(url)
+    standings = []
 
-
-
+    for div in soup.find_all("div", class_="ui-table__row"):
+        team_name = div.find("a", class_="tableCellParticipant__name").get_text(strip=True)
+        all_data = div.find_all("span", class_="table__cell--value")
+        team_games = all_data[0].get_text(strip=True)
+        team_wins = all_data[1].get_text(strip=True)
+        team_draws = all_data[2].get_text(strip=True)
+        team_losses = all_data[3].get_text(strip=True)
+        team_score = all_data[4].get_text(strip=True)
+        team_diff = all_data[5].get_text(strip=True)
+        team_points = all_data[6].get_text(strip=True)
+        standings.append((team_name, team_games, team_wins, team_draws, team_losses, team_score, team_diff, team_points))
+    return standings
 
 
 
@@ -162,8 +218,9 @@ if __name__ == "__main__":
     #     for match in matches:
     #         print(f"Match date: {match[0]} | {match[1]} {match[3]}-{match[4]} {match[2]}")
 
-    standings = league_standings("inglaterra", "premier-league")
-    place = 1
-    for team in standings:
-        print(f"{place}. {team[0]} | {team[7]}")
-        place += 1
+    # standings = league_standings("inglaterra", "premier-league")
+    # place = 1
+    # for team in standings:
+    #     print(f"{place}. {team[0]} | {team[7]}")
+    #     place += 1
+    print(team_info("portugal","liga-portugal-betclic", "benfica" ))
