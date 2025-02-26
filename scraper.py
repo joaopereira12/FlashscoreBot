@@ -124,8 +124,40 @@ def league_standings(country, league):
         standings.append((team_name, team_games, team_wins, team_draws, team_losses, team_score, team_diff, team_points))
     return standings
 
-def league_next_fixtures():
-    return 0
+def league_next_fixtures(country, league):
+    url = f"https://www.flashscore.pt/futebol/{country}/{league}/lista/"
+    soup = create_soup(url)
+    round_matches = defaultdict(list)
+    current_round = None
+
+    # Iterate over all divs to maintain the page order
+    for div in soup.find_all("div"):
+        classes = div.get("class", [])
+        if "event__round--static" in classes:
+            current_round = div.get_text(strip=True)
+        elif "event__match" in classes and current_round:
+            try:
+                event_time_elem = div.find("div", class_="event__time")
+                event_time = event_time_elem.get_text(strip=True) if event_time_elem else ""
+                
+                home_team_elem = div.find("div", class_="event__homeParticipant")
+                home_team = ""
+                if home_team_elem:
+                    home_team_span = home_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
+                    home_team = home_team_span.get_text(strip=True) if home_team_span else ""
+                
+                away_team_elem = div.find("div", class_="event__awayParticipant")
+                away_team = ""
+                if away_team_elem:
+                    away_team_span = away_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
+                    away_team = away_team_span.get_text(strip=True) if away_team_span else ""
+                
+                round_matches[current_round].append((event_time, home_team, away_team))
+            except Exception as e:
+                print(f"Error extracting match details: {e}")
+    return round_matches
+
+    
 
 def get_team_page_url(country, league, team):
     url = f"https://www.flashscore.pt/futebol/{country}/{league}/classificacoes/"
@@ -211,16 +243,16 @@ def team_standings_championship(url):
 
 
 if __name__ == "__main__":
-    # round_matches = last_results_league("portugal", "liga-portugal-betclic")
+    round_matches = league_next_fixtures("portugal", "liga-portugal-betclic")
     
-    # for round_name, matches in round_matches.items():
-    #     print(f"\n{round_name}")
-    #     for match in matches:
-    #         print(f"Match date: {match[0]} | {match[1]} {match[3]}-{match[4]} {match[2]}")
+    for round_name, matches in round_matches.items():
+        print(f"\n{round_name}")
+        for match in matches:
+            print(f"Match date: {match[0]} | {match[1]} vs {match[2]}")
 
     # standings = league_standings("inglaterra", "premier-league")
     # place = 1
     # for team in standings:
     #     print(f"{place}. {team[0]} | {team[7]}")
     #     place += 1
-    print(team_info("portugal","liga-portugal-betclic", "benfica" ))
+    # print(team_info("portugal","liga-portugal-betclic", "benfica" ))
