@@ -239,20 +239,3 @@ def team_standings_championship(url):
         team_points = all_data[6].get_text(strip=True)
         standings.append((team_name, team_games, team_wins, team_draws, team_losses, team_score, team_diff, team_points))
     return standings
-
-
-
-if __name__ == "__main__":
-    round_matches = league_next_fixtures("portugal", "liga-portugal-betclic")
-    
-    for round_name, matches in round_matches.items():
-        print(f"\n{round_name}")
-        for match in matches:
-            print(f"Match date: {match[0]} | {match[1]} vs {match[2]}")
-
-    # standings = league_standings("inglaterra", "premier-league")
-    # place = 1
-    # for team in standings:
-    #     print(f"{place}. {team[0]} | {team[7]}")
-    #     place += 1
-    # print(team_info("portugal","liga-portugal-betclic", "benfica" ))
