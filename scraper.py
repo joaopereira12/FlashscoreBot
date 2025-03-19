@@ -64,37 +64,41 @@ def last_results_league(country, league):
     round_matches = defaultdict(list)
     current_round = None
 
+    counter = 0
     # Iterate over all divs to maintain the page order
     for div in soup.find_all("div"):
         classes = div.get("class", [])
-        if "event__round--static" in classes:
-            current_round = div.get_text(strip=True)
-        elif "event__match" in classes and current_round:
-            try:
-                event_time_elem = div.find("div", class_="event__time")
-                event_time = event_time_elem.get_text(strip=True) if event_time_elem else ""
-                
-                home_team_elem = div.find("div", class_="event__homeParticipant")
-                home_team = ""
-                if home_team_elem:
-                    home_team_span = home_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
-                    home_team = home_team_span.get_text(strip=True) if home_team_span else ""
-                
-                away_team_elem = div.find("div", class_="event__awayParticipant")
-                away_team = ""
-                if away_team_elem:
-                    away_team_span = away_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
-                    away_team = away_team_span.get_text(strip=True) if away_team_span else ""
-                
-                home_score_elem = div.find("div", class_="event__score--home")
-                home_score = home_score_elem.get_text(strip=True) if home_score_elem else ""
-                
-                away_score_elem = div.find("div", class_="event__score--away")
-                away_score = away_score_elem.get_text(strip=True) if away_score_elem else ""
-                
-                round_matches[current_round].append((event_time, home_team, away_team, home_score, away_score))
-            except Exception as e:
-                print(f"Error extracting match details: {e}")
+        if counter <= 2:
+            if "event__round--static" in classes:
+                current_round = div.get_text(strip=True)
+                counter += 1
+            elif "event__match" in classes and current_round:
+                try:
+                    event_time_elem = div.find("div", class_="event__time")
+                    event_time = event_time_elem.get_text(strip=True) if event_time_elem else ""
+                    
+                    home_team_elem = div.find("div", class_="event__homeParticipant")
+                    home_team = ""
+                    if home_team_elem:
+                        home_team_span = home_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
+                        home_team = home_team_span.get_text(strip=True) if home_team_span else ""
+                    
+                    away_team_elem = div.find("div", class_="event__awayParticipant")
+                    away_team = ""
+                    if away_team_elem:
+                        away_team_span = away_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
+                        away_team = away_team_span.get_text(strip=True) if away_team_span else ""
+                    
+                    home_score_elem = div.find("span", class_="event__score--home")
+                    home_score = home_score_elem.get_text(strip=True) if home_score_elem else ""
+                    
+                    away_score_elem = div.find("span", class_="event__score--away")
+                    away_score = away_score_elem.get_text(strip=True) if away_score_elem else ""
+                    
+                    round_matches[current_round].append((event_time, home_team, away_team, home_score, away_score))
+                    
+                except Exception as e:
+                    print(f"Error extracting match details: {e}")
     return round_matches
 
 def league_standings(country, league):
@@ -119,9 +123,8 @@ def league_standings(country, league):
         team_draws = all_data[2].get_text(strip=True)
         team_losses = all_data[3].get_text(strip=True)
         team_score = all_data[4].get_text(strip=True)
-        team_diff = all_data[5].get_text(strip=True)
         team_points = all_data[6].get_text(strip=True)
-        standings.append((team_name, team_games, team_wins, team_draws, team_losses, team_score, team_diff, team_points))
+        standings.append((team_name, team_games, team_wins, team_draws, team_losses, team_score, team_points))
     return standings
 
 def league_next_fixtures(country, league):
@@ -130,31 +133,35 @@ def league_next_fixtures(country, league):
     round_matches = defaultdict(list)
     current_round = None
 
+    counter = 0
+
     # Iterate over all divs to maintain the page order
     for div in soup.find_all("div"):
         classes = div.get("class", [])
-        if "event__round--static" in classes:
-            current_round = div.get_text(strip=True)
-        elif "event__match" in classes and current_round:
-            try:
-                event_time_elem = div.find("div", class_="event__time")
-                event_time = event_time_elem.get_text(strip=True) if event_time_elem else ""
-                
-                home_team_elem = div.find("div", class_="event__homeParticipant")
-                home_team = ""
-                if home_team_elem:
-                    home_team_span = home_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
-                    home_team = home_team_span.get_text(strip=True) if home_team_span else ""
-                
-                away_team_elem = div.find("div", class_="event__awayParticipant")
-                away_team = ""
-                if away_team_elem:
-                    away_team_span = away_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
-                    away_team = away_team_span.get_text(strip=True) if away_team_span else ""
-                
-                round_matches[current_round].append((event_time, home_team, away_team))
-            except Exception as e:
-                print(f"Error extracting match details: {e}")
+        if counter <= 2:
+            if "event__round--static" in classes:
+                current_round = div.get_text(strip=True)
+                counter += 1
+            elif "event__match" in classes and current_round:
+                try:
+                    event_time_elem = div.find("div", class_="event__time")
+                    event_time = event_time_elem.get_text(strip=True) if event_time_elem else ""
+                    
+                    home_team_elem = div.find("div", class_="event__homeParticipant")
+                    home_team = ""
+                    if home_team_elem:
+                        home_team_span = home_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
+                        home_team = home_team_span.get_text(strip=True) if home_team_span else ""
+                    
+                    away_team_elem = div.find("div", class_="event__awayParticipant")
+                    away_team = ""
+                    if away_team_elem:
+                        away_team_span = away_team_elem.select_one("[data-testid='wcl-scores-simpleText-01']")
+                        away_team = away_team_span.get_text(strip=True) if away_team_span else ""
+                    
+                    round_matches[current_round].append((event_time, home_team, away_team))
+                except Exception as e:
+                    print(f"Error extracting match details: {e}")
     return round_matches
 
     

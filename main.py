@@ -7,6 +7,8 @@ import asyncio
 import os
 from itertools import cycle
 
+from cogs.flashscore import LeagueView
+
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
 bot_statuses = cycle(["Serie A", "La Liga", "Liga Portugal", "Premier League"])
@@ -36,10 +38,10 @@ async def on_ready():
 # async def flashscore(ctx):
 #     await ctx.send("Hello, World!")
 
-# @bot.command(name="test", description="button")
-# async def button_test(ctx):
-#     view = LeagueView(ctx, "Ola Manos")
-#     await ctx.send("ola",view=view)
+@bot.command(name="test", description="button")
+async def button_test(ctx):
+    view = LeagueView(ctx, "Ola Manos")
+    await ctx.send("ola",view=view)
     
 async def load():
     for filename in os.listdir("./cogs"):
