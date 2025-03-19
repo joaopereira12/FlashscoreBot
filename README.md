@@ -1,1 +1,3 @@
 # FlashscoreBot
+
+**Flashscore** Discord Bot.
