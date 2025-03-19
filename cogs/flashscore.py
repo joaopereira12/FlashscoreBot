@@ -4,14 +4,42 @@ from tabulate import tabulate
 from scraper import *
 
 class TeamInfoButton(discord.ui.Button):
-    def __init__(self, team_name):
-        super().__init__(label=f"View {team_name}", style=discord.ButtonStyle.secondary)
-        self.team_name = team_name
+    def __init__(self, country, league, team):
+        super().__init__(label=f"View {team}", style=discord.ButtonStyle.secondary)
+        self.team = team
+        self.country = country
+        self.league = league
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        team_info = f"🔍 Details for **{self.team_name}**:\n⚽ More information coming soon!"
-        await interaction.followup.send(team_info, ephemeral=True) 
+        print(f"🔍 Fetching team info for {self.team} in {self.league}")
+
+        try:
+            team_details = team_info(self.country, self.league, self.team)  # Ensure function exists
+            print(f"✅ Team Info Retrieved: {team_details}")
+
+            prev_matches_text = ""
+            for match_date, home, away, home_score, away_score in team_details["prev_matches"]:
+                prev_matches_text += f"{match_date} {home} {home_score} - {away_score} {away}\n"
+
+            next_matches_text = ""
+            for match_date, home, away in team_details["next_matches"]:
+                next_matches_text += f"{match_date} {home} vs {away}\n"
+
+            embed = discord.Embed(title=f"🔍 {self.team}", color=discord.Color.blue())
+            embed.add_field(name="📅 Previous Matches", value=f"\n{prev_matches_text}\n", inline=False)
+            embed.add_field(name="📅 Next Matches", value=f"\n{next_matches_text}\n", inline=False)
+            embed.set_footer(text="Powered by Flashscore ⚽")
+
+            view = discord.ui.View()
+            view.add_item(LeagueSelection()) 
+
+            # ✅ Use `followup.send` instead of `edit`, so it doesn’t replace standings.
+            await interaction.followup.send(embed=embed, view=view)  
+
+        except Exception as e:
+            print(f"🚨 Error fetching team info: {e}")
+            await interaction.followup.send("❌ Failed to retrieve team info.", ephemeral=True)
 
 class LeagueSelection(discord.ui.Select):
 
@@ -28,73 +56,77 @@ class LeagueSelection(discord.ui.Select):
 
         async def callback(self, interaction: discord.Interaction):
             
-            print("⚡ Interaction received!")  # ✅ Check if interaction is received
-            await interaction.response.defer()
+            print("⚡ Interaction received!")  # ✅ Log the interaction
+            await interaction.response.defer()  # ✅ Acknowledge the interaction
 
             country, league = self.values[0].split(";")  
             print(f"🌍 Selected Country: {country}, League: {league}")  # ✅ Log selection
 
+            # ✅ Send a temporary "Loading..." message
+            loading_message = await interaction.followup.send("⏳ Loading league data, please wait...", ephemeral=False)
+
             try:
+                # ✅ Fetch last results
                 last_results = last_results_league(country, league)
                 print(f"📊 Fetched Last Results: {last_results}")
 
-                # ✅ Format the last results (compact format)
                 last_results_text = ""
-
                 for round_name, matches in last_results.items():
-                    last_results_text += f"⚽ **{round_name}**\n"
+                    last_results_text += f"\n⚽ **{round_name}**\n"
                     for event_time, home_team, away_team, home_score, away_score in matches:
                         last_results_text += f"{home_team} {home_score} - {away_score} {away_team} ({event_time})\n"
 
-                    if len(last_results_text) > 950:  # ✅ Ensure it doesn't exceed Discord's limit (1024 per field)
+                    if len(last_results_text) > 950:  
                         last_results_text += "... (more matches not displayed)\n"
                         break
 
+                # ✅ Fetch upcoming fixtures
                 next_fixtures = league_next_fixtures(country, league)
-                print(f"📊 Fetched Last Results: {last_results}")
+                print(f"📊 Fetched Next Fixtures: {next_fixtures}")
 
-                # ✅ Format the last results (compact format)
                 next_fixtures_text = ""
-
                 for round_name, matches in next_fixtures.items():
-                    next_fixtures_text += f"⚽ **{round_name}**\n"
+                    next_fixtures_text += f"\n⚽ **{round_name}**\n"
                     for event_time, home_team, away_team in matches:
                         next_fixtures_text += f"{home_team} - {away_team} ({event_time})\n"
 
-                    if len(next_fixtures_text) > 950:  # ✅ Ensure it doesn't exceed Discord's limit (1024 per field)
+                    if len(next_fixtures_text) > 950:  
                         next_fixtures_text += "... (more matches not displayed)\n"
                         break
 
-                standings = league_standings(country, league)  # Fetch data
-                print(f"📊 Fetched Standings: {standings}")  # ✅ Log data
+                # ✅ Fetch standings
+                standings = league_standings(country, league)
+                print(f"📊 Fetched Standings: {standings}")
 
-                if not standings:  
+                if not standings:
                     raise ValueError("❌ No standings found!")
 
-                # Format table
+                # ✅ Format standings table
                 table = tabulate(
                     standings, 
                     headers=["Team", "G", "W", "D", "L", "GD", "P"], 
                     tablefmt=""
                 )
 
-                # Create Embed
+                # ✅ Create the final embed
                 embed = discord.Embed(title=f"🏆 {league.replace('-', ' ').title()}", color=discord.Color.blue())
-                embed.add_field(name="📅 Last Round Results", value=f"```\n{last_results_text}\n```", inline=False)
-                embed.add_field(name="📅 Next Fixtures", value=f"```\n{next_fixtures_text}\n```", inline=False)
-                embed.add_field(name="📊 Standings", value=f"```\n{table}\n```", inline=False)
+                embed.add_field(name="📅 Last Round Results", value=f"\n\n{last_results_text}\n", inline=False)
+                embed.add_field(name="📅 Next Fixtures", value=f"\n\n{next_fixtures_text}\n", inline=False)
+                embed.description = f"\n📊 **Standings**\n```\n{table}\n```"
                 embed.set_footer(text="Powered by Flashscore ⚽")
 
+                # ✅ Add buttons for each team
                 view = discord.ui.View()
-                for team, *_ in standings:  # Iterate over teams and create buttonsa
-                    view.add_item(TeamInfoButton(team))
-                
-                # ✅ Edit the original message instead of sending a new one
-                await interaction.message.edit(embed=embed, view=view)
+                view.add_item(LeagueSelection())  # Keep the dropdown menu
+                for team, *_ in standings:  
+                    view.add_item(TeamInfoButton(country, league, team))
+
+                # ✅ Edit the original "Loading..." message with the final embed
+                await loading_message.edit(content=None, embed=embed, view=view)
 
             except Exception as e:
                 print(f"🚨 Error: {e}")
-                await interaction.followup.send("❌ Failed to retrieve standings. Try again later.", ephemeral=True)
+                await loading_message.edit(content="❌ Failed to retrieve standings. Try again later.", embed=None, view=None)
 
 class LeagueView(discord.ui.View):
         def __init__(self):

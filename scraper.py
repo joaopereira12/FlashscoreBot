@@ -193,10 +193,12 @@ def team_info(country, league, team):
     url = get_team_page_url(country, league, team) + "resultados/"
     print(url)
     team_info["prev_matches"] = team_prev_matches(url)
+    print(team_info["prev_matches"])
     url = get_team_page_url(country, league, team) + "lista/"
     team_info["next_matches"] = team_next_matches(url)
-    url = get_team_page_url(country, league, team) + "classificacoes/"
-    team_info["standings"] = team_standings_championship(url)
+    print(team_info["next_matches"])
+    # url = get_team_page_url(country, league, team) + "classificacoes/"
+    # team_info["standings"] = team_standings_championship(url)
     return team_info
 
 # Returns the next 5 games of the team
@@ -204,7 +206,6 @@ def team_next_matches(url):
     soup = create_soup(url)
     results = []
     matches = soup.find_all("div", class_="event__match")
-    
     
     for i in range(5):
         match_date = matches[i].find("div", class_="event__time").get_text()    
@@ -221,28 +222,28 @@ def team_prev_matches(url):
     print(matches)
     
     for i in range(5):
-        match_date = matches[i].find("div", class_="event__time").get_text()    
+        match_date = matches[i].find("div", class_="event__time").get_text()
         home_team = matches[i].find("div", class_="event__homeParticipant").select_one("[data-testid='wcl-scores-simpleText-01']").get_text(strip=True)
-        away_team = matches[i].find("div", class_="event__awayParticipant").select_one("[data-testid='wcl-scores-simpleText-01']").get_text(strip=True)     
-        home_score = matches[i].find("div", class_="event__score--home").get_text(strip=True)
-        away_score = matches[i].find("div", class_="event__score--away").get_text(strip=True)
+        away_team = matches[i].find("div", class_="event__awayParticipant").select_one("[data-testid='wcl-scores-simpleText-01']").get_text(strip=True)
+        home_score = matches[i].find("span", class_="event__score--home").get_text(strip=True)
+        away_score = matches[i].find("span", class_="event__score--away").get_text(strip=True)
         results.append((match_date, home_team, away_team, home_score, away_score))
     return results       
 
 # returns the team standing in championship
-def team_standings_championship(url):
-    soup = create_soup(url)
-    standings = []
+# def team_standings_championship(url):
+#     soup = create_soup(url)
+#     standings = []
 
-    for div in soup.find_all("div", class_="ui-table__row"):
-        team_name = div.find("a", class_="tableCellParticipant__name").get_text(strip=True)
-        all_data = div.find_all("span", class_="table__cell--value")
-        team_games = all_data[0].get_text(strip=True)
-        team_wins = all_data[1].get_text(strip=True)
-        team_draws = all_data[2].get_text(strip=True)
-        team_losses = all_data[3].get_text(strip=True)
-        team_score = all_data[4].get_text(strip=True)
-        team_diff = all_data[5].get_text(strip=True)
-        team_points = all_data[6].get_text(strip=True)
-        standings.append((team_name, team_games, team_wins, team_draws, team_losses, team_score, team_diff, team_points))
-    return standings
+#     for div in soup.find_all("div", class_="ui-table__row"):
+#         team_name = div.find("a", class_="tableCellParticipant__name").get_text(strip=True)
+#         all_data = div.find_all("span", class_="table__cell--value")
+#         team_games = all_data[0].get_text(strip=True)
+#         team_wins = all_data[1].get_text(strip=True)
+#         team_draws = all_data[2].get_text(strip=True)
+#         team_losses = all_data[3].get_text(strip=True)
+#         team_score = all_data[4].get_text(strip=True)
+#         team_diff = all_data[5].get_text(strip=True)
+#         team_points = all_data[6].get_text(strip=True)
+#         standings.append((team_name, team_games, team_wins, team_draws, team_losses, team_score, team_diff, team_points))
+#     return standings
